@@ -253,9 +253,9 @@ int red()
         VDAETDS[1]=in_B.salida;
         VDAETDS[2]=in_C.salida;
         salidas_optimizacion[4*i+0]=in_A.salida;
-        salidas_optimizacion[4*i+0]=in_B.salida;
-        salidas_optimizacion[4*i+0]=in_C.salida;
-        salidas_optimizacion[4*i+0]=(float)1;
+        salidas_optimizacion[4*i+1]=in_B.salida;
+        salidas_optimizacion[4*i+2]=in_C.salida;
+        salidas_optimizacion[4*i+3]=(float)1;
 
 
         /*Ejecucion de la segunda capa*/
