@@ -230,7 +230,11 @@ int red()
 
 
     float* dL;
+    float* dY;
     dL=malloc(df.registros*sizeof(float));
+    dY=malloc(df.registros*3*sizeof(float));
+    float* VDC;//VectorDeConstruccion para la derivada de la salida de la neurona de salida con respecto a los datos
+    VDC=malloc(df.registros*2*sizeof(float));
 
    
     float VDAETDS[3]; //VectorDeApoyoEnTraspasoDeSeniales
@@ -252,13 +256,17 @@ int red()
 
         VDAETDS[0]=ocult_A.salida;
         VDAETDS[1]=ocult_B.salida;
+        dY[3*i]=ocult_A.salida;
+        dY[3*i+1]=ocult_B.salida;
+        dY[3*i+2]=(float)1;
 
+        //printf("%f\t%f\t%f\n",ocult_A.salida,ocult_B.salida,(float)1);
         /*Ejecucion de la tercera capa*/
         salida.salida=ejecutar(salida,VDAETDS);
 
         
         
-        dL[i]=(salida.salida-vector[i][4])*(2/df.registros);
+        dL[i]=(salida.salida-vector[i][4])/(float)df.registros;
         //printf("A=%.4f, real=%.4f, dif=%.4f\n",salida.salida,vector[i][4],dL[i]);
 
         error=error+((salida.salida-vector[i][4])*(salida.salida-vector[i][4]));
@@ -266,12 +274,21 @@ int red()
         //printf("\n\n");
           
     }
-    printf("Error=%.2f\n",(error)/df.registros);
+    printf("Error=%.2f\n\n\n",(error)/df.registros);
 
     /*Calculando el gradiente de la función de costo*/
    
-   
-    matrix_print(matrix_init(df.registros,1,&dL[0]));
+    //matrix_print(matrix_init(1,df.registros,dL)); 
+    
+    //matrix_print(matrix_init(df.registros,3,dY));
+
+    matrix gradiente_salida;
+    gradiente_salida=matrix_product(matrix_init(1,df.registros,dL),matrix_init(df.registros,3,dY));
+    matrix_print(gradiente_salida);
+
+    
+
+    
 
 
   
