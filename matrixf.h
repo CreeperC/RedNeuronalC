@@ -1,10 +1,10 @@
 
-typedef struct{
-float **data;
-int filas;
-int columnas;
-}matrix;
-
+typedef struct
+{
+    float **data;
+    int filas;
+    int columnas;
+} matrix;
 
 matrix matrix_init(int filas, int columnas, float *M);
 
