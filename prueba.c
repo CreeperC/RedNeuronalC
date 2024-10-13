@@ -32,6 +32,7 @@ float ejecutar(neurona N, float* vector)
     for(i=0;i<N.tam;i++)
     {   
         sum=sum+N.pesos[i]*vector[i];
+        //printf("hola neurona %d\n",N.tam);
     }
     sum=sum+N.sesgo;
    
@@ -240,78 +241,10 @@ int red()
     salidas_optimizacion=malloc(df.registros*4*(sizeof(float)));
 
 
-
-    float error=0;
-    for(i=0;i<df.registros;i++)
-    {  
-        /*Ejecucion de la primera capa*/
-        in_A.salida=ejecutar(in_A,vector[i]);
-        in_B.salida=ejecutar(in_B,vector[i]);
-        in_C.salida=ejecutar(in_C,vector[i]);
-
-        VDAETDS[0]=in_A.salida;
-        VDAETDS[1]=in_B.salida;
-        VDAETDS[2]=in_C.salida;
-        salidas_optimizacion[4*i+0]=in_A.salida;
-        salidas_optimizacion[4*i+1]=in_B.salida;
-        salidas_optimizacion[4*i+2]=in_C.salida;
-        salidas_optimizacion[4*i+3]=(float)1;
-
-
-        /*Ejecucion de la segunda capa*/
-        ocult_A.salida=ejecutar(ocult_A,VDAETDS);
-        ocult_B.salida=ejecutar(ocult_B,VDAETDS);
-
-        VDAETDS[0]=ocult_A.salida;
-        VDAETDS[1]=ocult_B.salida;
-        dY[3*i]=ocult_A.salida;
-        dY[3*i+1]=ocult_B.salida;
-        dY[3*i+2]=(float)1;
-
-        //printf("%f\t%f\t%f\n",ocult_A.salida,ocult_B.salida,(float)1);
-        /*Ejecucion de la tercera capa*/
-        salida.salida=ejecutar(salida,VDAETDS);
-
-        
-        
-        dL[i]=(salida.salida-vector[i][4])/(float)df.registros;
-        //printf("A=%.4f, real=%.4f, dif=%.4f\n",salida.salida,vector[i][4],dL[i]);
-
-        error=error+((salida.salida-vector[i][4])*(salida.salida-vector[i][4]));
-
-        //printf("\n\n");
-          
-    }
-    printf("Error=%.2f\n\n\n",(error)/df.registros);
-
-    /*Calculando el gradiente de la función de costo*/
-   
-    //matrix_print(matrix_init(1,df.registros,dL)); 
-    
-    //matrix_print(matrix_init(df.registros,3,dY));
-
     matrix gradiente_salida;
-    gradiente_salida=matrix_product(matrix_init(1,df.registros,dL),matrix_init(df.registros,3,dY));//Primer gradiente
-    //matrix_print(gradiente_salida);
     matrix O21_dw;
-    O21_dw=matrix_init(df.registros,4, salidas_optimizacion);
-
     matrix gradiente_neurona1_capaoculta,gradiente_neurona2_capaoculta;
-    gradiente_neurona1_capaoculta=matrix_product(escalar(matrix_init(1,df.registros,dL),salida.pesos[0]),O21_dw);//<--Gradiente de la neurona oculta 1
-
-    gradiente_neurona2_capaoculta=matrix_product(escalar(matrix_init(1,df.registros,dL),salida.pesos[1]),O21_dw);//<---Gradiente de la neurona oculta 2
-    
-
-    /* <---Tengo que usar esa matriz y mutiplicarla 
-    por la derivada de la suma de la primera neurona con respecto a las salidas de la primera capa*/
     matrix deltaNeuronaOculta1,deltaNeuronaOculta2;
-    deltaNeuronaOculta1=escalar(matrix_init(1,df.registros,dL),salida.pesos[0]);
-    deltaNeuronaOculta2=escalar(matrix_init(1,df.registros,dL),salida.pesos[1]);
-
-    //matrix_print(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])));
-    
-    //printf("filas=%d,colum=%d",matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])).filas,matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])).columnas);
-
     float* data;
     data=malloc(df.registros*5*sizeof(float));
     for(i=0;i<df.registros;i++)
@@ -322,70 +255,168 @@ int red()
         data[i*5+3]=vector[i][3];
         data[i*5+4]=(float)1;
     }
-    
-
     matrix grad_entrada_1,grad_entrada_2,grad_entrada_3;
-    grad_entrada_1=matrix_product(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])),matrix_init(df.registros,5,data));
 
-    grad_entrada_2=matrix_product(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[1]),escalar(deltaNeuronaOculta2,ocult_B.pesos[1])),matrix_init(df.registros,5,data));
+    float tam_paso=0.001;
 
-    grad_entrada_3=matrix_product(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[2]),escalar(deltaNeuronaOculta2,ocult_B.pesos[2])),matrix_init(df.registros,5,data));
+    int w;
+    int epocas=50000;
+    float error;
+    for(w=0;w<epocas;w++)
+    {           
+                
 
-    //printf("\nGradiente de capa de salida\n");
-    //matrix_print(gradiente_salida);
-    salida.pesos[0]-=gradiente_salida.data[0][0];
-    salida.pesos[1]-=gradiente_salida.data[0][1];
-    salida.pesos[2]-=gradiente_salida.data[0][2];
+                error=0;
+                for(i=0;i<df.registros;i++)
+                {  
+                    
+                    /*Ejecucion de la primera capa*/
+                    in_A.salida=ejecutar(in_A,vector[i]);
+                    
+                    in_B.salida=ejecutar(in_B,vector[i]);
+                    
+                    in_C.salida=ejecutar(in_C,vector[i]);
+                    
+                    
+
+                    VDAETDS[0]=in_A.salida;
+                    VDAETDS[1]=in_B.salida;
+                    VDAETDS[2]=in_C.salida;
+                    salidas_optimizacion[4*i+0]=in_A.salida;
+                    salidas_optimizacion[4*i+1]=in_B.salida;
+                    salidas_optimizacion[4*i+2]=in_C.salida;
+                    salidas_optimizacion[4*i+3]=(float)1;
+
+
+                    /*Ejecucion de la segunda capa*/
+                    ocult_A.salida=ejecutar(ocult_A,VDAETDS);
+                    ocult_B.salida=ejecutar(ocult_B,VDAETDS);
+
+                    VDAETDS[0]=ocult_A.salida;
+                    VDAETDS[1]=ocult_B.salida;
+                    dY[3*i]=ocult_A.salida;
+                    dY[3*i+1]=ocult_B.salida;
+                    dY[3*i+2]=(float)1;
+
+                    //printf("%f\t%f\t%f\n",ocult_A.salida,ocult_B.salida,(float)1);
+                    /*Ejecucion de la tercera capa*/
+                    salida.salida=ejecutar(salida,VDAETDS);
+
+                    
+                    
+                    dL[i]=(salida.salida-vector[i][4])/(float)df.registros;
+                    //printf("A=%.4f, real=%.4f, dif=%.4f\n",salida.salida,vector[i][4],dL[i]);
+
+                    error=error+((salida.salida-vector[i][4])*(salida.salida-vector[i][4]));
+
+                    //printf("\n\n");
+                    
+                }
+                printf("Error=%.20f\n\n\n",(error)/df.registros);
+             
+
+                //Calculando el gradiente de la función de costo
+            
+                //matrix_print(matrix_init(1,df.registros,dL)); 
+                
+                //matrix_print(matrix_init(df.registros,3,dY));
+
+                
+                gradiente_salida=matrix_product(matrix_init(1,df.registros,dL),matrix_init(df.registros,3,dY));//Primer gradiente
+                //matrix_print(gradiente_salida);
+                
+                O21_dw=matrix_init(df.registros,4, salidas_optimizacion);
+
+                
+                gradiente_neurona1_capaoculta=matrix_product(escalar(matrix_init(1,df.registros,dL),salida.pesos[0]),O21_dw);//<--Gradiente de la neurona oculta 1
+
+                gradiente_neurona2_capaoculta=matrix_product(escalar(matrix_init(1,df.registros,dL),salida.pesos[1]),O21_dw);//<---Gradiente de la neurona oculta 2
+                
+
+                
+                deltaNeuronaOculta1=escalar(matrix_init(1,df.registros,dL),salida.pesos[0]);
+                deltaNeuronaOculta2=escalar(matrix_init(1,df.registros,dL),salida.pesos[1]);
+
+                //matrix_print(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])));
+                
+                //printf("filas=%d,colum=%d",matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])).filas,matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])).columnas);
+
+
+                
+
+                
+                grad_entrada_1=matrix_product(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[0]),escalar(deltaNeuronaOculta2,ocult_B.pesos[0])),matrix_init(df.registros,5,data));
+
+                grad_entrada_2=matrix_product(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[1]),escalar(deltaNeuronaOculta2,ocult_B.pesos[1])),matrix_init(df.registros,5,data));
+
+                grad_entrada_3=matrix_product(matrix_sum(escalar(deltaNeuronaOculta1,ocult_A.pesos[2]),escalar(deltaNeuronaOculta2,ocult_B.pesos[2])),matrix_init(df.registros,5,data));
+
+                //printf("\nGradiente de capa de salida\n");
+                //matrix_print(gradiente_salida);
+
+                
+
+                
+                salida.pesos[0]-=gradiente_salida.data[0][0]*tam_paso;
+            
+                salida.pesos[1]-=gradiente_salida.data[0][1]*tam_paso;
+
+                salida.sesgo-=gradiente_salida.data[0][2]*tam_paso;
+           
+
+
+                //printf("\nGradiente 1 de capa oculta\n");
+                //matrix_print(gradiente_neurona1_capaoculta);
+                ocult_A.pesos[0]-=gradiente_neurona1_capaoculta.data[0][0]*tam_paso;
+                ocult_A.pesos[1]-=gradiente_neurona1_capaoculta.data[0][1]*tam_paso;
+                ocult_A.pesos[2]-=gradiente_neurona1_capaoculta.data[0][2]*tam_paso;
+                ocult_A.sesgo-=gradiente_neurona1_capaoculta.data[0][3]*tam_paso;
+                
+
+                //printf("\nGradiente 2 de capa oculta\n");
+                //matrix_print(gradiente_neurona2_capaoculta);
+                ocult_B.pesos[0]-=gradiente_neurona2_capaoculta.data[0][0]*tam_paso;
+                ocult_B.pesos[1]-=gradiente_neurona2_capaoculta.data[0][1]*tam_paso;
+                ocult_B.pesos[2]-=gradiente_neurona2_capaoculta.data[0][2]*tam_paso;
+                ocult_B.sesgo-=gradiente_neurona2_capaoculta.data[0][3]*tam_paso;
+
+
+                //printf("\nGradiente 1 capa de entrada");
+                //matrix_print(grad_entrada_1);
+                in_A.pesos[0]-=grad_entrada_1.data[0][0]*tam_paso;
+                in_A.pesos[1]-=grad_entrada_1.data[0][1]*tam_paso;
+                in_A.pesos[2]-=grad_entrada_1.data[0][2]*tam_paso;
+                in_A.pesos[3]-=grad_entrada_1.data[0][3]*tam_paso;
+                in_A.sesgo-=grad_entrada_1.data[0][4]*tam_paso;
+                
+
+                //printf("\nGradiente 2 capa de entrada");
+                //matrix_print(grad_entrada_2);
+                in_B.pesos[0]-=grad_entrada_2.data[0][0]*tam_paso;
+                in_B.pesos[1]-=grad_entrada_2.data[0][1]*tam_paso;
+                in_B.pesos[2]-=grad_entrada_2.data[0][2]*tam_paso;
+                in_B.pesos[3]-=grad_entrada_2.data[0][3]*tam_paso;
+                in_B.sesgo-=grad_entrada_2.data[0][4]*tam_paso;
+
+                //printf("\nGradiente 3 capa de entrada");
+                //matrix_print(grad_entrada_3);
+                
+                in_C.pesos[0]-=grad_entrada_3.data[0][0]*tam_paso;
+                in_C.pesos[1]-=grad_entrada_3.data[0][1]*tam_paso;
+                in_C.pesos[2]-=grad_entrada_3.data[0][2]*tam_paso;
+                in_C.pesos[3]-=grad_entrada_3.data[0][3]*tam_paso;
+                in_C.sesgo-=grad_entrada_3.data[0][4]*tam_paso;
+        
 
 
 
-    //printf("\nGradiente 1 de capa oculta\n");
-    //matrix_print(gradiente_neurona1_capaoculta);
-    ocult_A.pesos[0]-=gradiente_neurona1_capaoculta.data[0][0];
-    ocult_A.pesos[1]-=gradiente_neurona1_capaoculta.data[0][1];
-    ocult_A.pesos[2]-=gradiente_neurona1_capaoculta.data[0][2];
-    ocult_A.pesos[3]-=gradiente_neurona1_capaoculta.data[0][3];
-    
-
-    //printf("\nGradiente 2 de capa oculta\n");
-    //matrix_print(gradiente_neurona2_capaoculta);
-    ocult_B.pesos[0]-=gradiente_neurona2_capaoculta.data[0][0];
-    ocult_B.pesos[1]-=gradiente_neurona2_capaoculta.data[0][1];
-    ocult_B.pesos[2]-=gradiente_neurona2_capaoculta.data[0][2];
-    ocult_B.pesos[3]-=gradiente_neurona2_capaoculta.data[0][3];
-
-
-    //printf("\nGradiente 1 capa de entrada");
-    //matrix_print(grad_entrada_1);
-    in_A.pesos[0]-=grad_entrada_1.data[0][0];
-    in_A.pesos[1]-=grad_entrada_1.data[0][1];
-    in_A.pesos[2]-=grad_entrada_1.data[0][2];
-    in_A.pesos[3]-=grad_entrada_1.data[0][3];
-    in_A.pesos[4]-=grad_entrada_1.data[0][4];
-    
-
-    //printf("\nGradiente 2 capa de entrada");
-    //matrix_print(grad_entrada_2);
-    in_B.pesos[0]-=grad_entrada_2.data[0][0];
-    in_B.pesos[1]-=grad_entrada_2.data[0][1];
-    in_B.pesos[2]-=grad_entrada_2.data[0][2];
-    in_B.pesos[3]-=grad_entrada_2.data[0][3];
-    in_B.pesos[4]-=grad_entrada_2.data[0][4];
-
-    //printf("\nGradiente 3 capa de entrada");
-    //matrix_print(grad_entrada_3);
-    in_C.pesos[0]-=grad_entrada_3.data[0][0];
-    in_C.pesos[1]-=grad_entrada_3.data[0][1];
-    in_C.pesos[2]-=grad_entrada_3.data[0][2];
-    in_C.pesos[3]-=grad_entrada_3.data[0][3];
-    in_C.pesos[4]-=grad_entrada_3.data[0][4];
+    }
 
 
 
 
 
 }
-
 
 int main()
 {
