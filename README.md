@@ -1,1 +1,1 @@
-Este proyecto es un experimento que intenta entrenar una red neuronal para reconocer el tipo de iris segun ciertas mediciones, el proyecto no esta terminado, falta agegar el back propagation.
+Este proyecto es un experimento que intenta entrenar una red neuronal para reconocer el tipo de iris segun ciertas mediciones, la red consta de tres neuronas de entrada, dos neuronas en una capa oculta y una neurona de salida, todas interconectadas y con la identidad como función de activacion.
